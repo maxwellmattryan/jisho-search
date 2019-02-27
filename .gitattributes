@@ -1,6 +1,2 @@
 # Auto detect text files and perform LF normalization
 * text=auto
-
-static/* linguist-vendored
-docs/* linguist-documentation
-*.rb linguist-language=Python
