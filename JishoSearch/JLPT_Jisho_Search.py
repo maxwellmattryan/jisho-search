@@ -1,12 +1,26 @@
 # TODO:
-# plan program design (identify part of speech, is kanji usually used, etc)
-# input error handling for any input
+# create class, "Word", with furigana (if furigana ...), kanji (if kanji, is usually written with kana), meaning (first and maybe second
+# section of meanings), isCommon, part of speech (enum ?, also if verb then what kind)
+# pull correct data from website page source
 
 # libraries
 import string
 from bs4 import BeautifulSoup
 import requests
 
+# function for getting input,called in soup object declaration
+def getURL():
+    jlptLevel = input("Please enter JLPT level: ")
+    while(isValidJLPT(jlptLevel) == False):
+        print("ERROR: " + "\"" + jlptLevel + "\" is an invalid input" + "\n")
+        jlptLevel = input("Please enter JLPT level: ")
+    url = "https://jisho.org" + "/search/jlpt%20" + jlptLevel + "%20%23words"
+    # print tests
+    print(jlptLevel)
+    print(url)
+    return (url)
+
+# checking if proper JLPT level
 def isValidJLPT(level):
     level = level.lower()
     if(level == "n5" or level == "n4" or level == "n3" or level == "n2" or level == "n1"):
@@ -17,17 +31,9 @@ def isValidJLPT(level):
         return False
 
 def main():
-    
-    jlptLevel = input("Please enter JLPT level: ")
-    while(isValidJLPT(jlptLevel) == False):
-        print("ERROR: " + "\"" + jlptLevel + "\" is an invalid input" + "\n")
-        jlptLevel = input("Please enter JLPT level: ")
 
-    url = "https://jisho.org" + "/search/jlpt%20" + jlptLevel + "%20%23words"
-    print(url)
-
-    pageResponse = requests.get(url)
-    soup = BeautifulSoup(pageResponse.text, "html.parser")
+    # gather html object with beautiful soup and requests library\
+    soup = BeautifulSoup(requests.get(getURL()).text, "html.parser")
 
     data = []
     div = soup.find('div', { 'class' : 'concept_light clearfix'})
@@ -41,4 +47,5 @@ def main():
     for meaning in div.find('span', { 'class' : 'text' }):
         print(meaning)
 
-main()
+if __name__ == "__main__":
+    main()
