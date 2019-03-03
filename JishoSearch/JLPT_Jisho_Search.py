@@ -1,7 +1,8 @@
 # TODO:
 # create dictionary for all words
 # write data to excel spreadsheet
-# clean up program
+# restructure program, write better functions, more efficient
+# think about implementing a try / except method for input error handling (?)
 
 # libraries
 import string
@@ -65,6 +66,7 @@ def main():
     # gather html object with beautiful soup and requests library
     soup = BeautifulSoup(requests.get(url).text, "html.parser")
 
+    words = {}
     while(len(soup.find_all('div', {'id' : 'main_results'})) > 0 and not soup.find('div', {'id' : 'no-matches'})):
         for entry in soup.find_all('div', {'class' : 'concept_light clearfix'}):
             kanji = entry.find('span', {'class' : 'text'}).text.strip()
