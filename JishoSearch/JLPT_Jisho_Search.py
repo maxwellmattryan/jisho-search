@@ -1,13 +1,16 @@
 # TODO:
-# create dictionary for all words
+# create better data structure words (dictionary)
 # write data to excel spreadsheet
-# restructure program, write better functions, more efficient
+# restructure program and cleanup code a bit
 # think about implementing a try / except method for input error handling (?)
+# if words have more than one line of meaning, scrape up to three (or should it be all ?)
+# figure out way to display proper characters in cmd and / or spreadsheet
+# comment code for comprehension for you and other users
 
 # libraries
 import string
-from bs4 import BeautifulSoup
 import requests
+from bs4 import BeautifulSoup
 
 # function for getting input, called in soup object declaration
 def getURL():
@@ -66,7 +69,6 @@ def main():
     # gather html object with beautiful soup and requests library
     soup = BeautifulSoup(requests.get(url).text, "html.parser")
 
-    words = {}
     while(len(soup.find_all('div', {'id' : 'main_results'})) > 0 and not soup.find('div', {'id' : 'no-matches'})):
         for entry in soup.find_all('div', {'class' : 'concept_light clearfix'}):
             kanji = entry.find('span', {'class' : 'text'}).text.strip()
