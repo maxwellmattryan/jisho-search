@@ -1,27 +1,28 @@
 # TODO:
-# create better data structure words (dictionary)
-# write data to excel spreadsheet
-# restructure program and cleanup code a bit
-# think about implementing a try / except method for input error handling (?)
-# if words have more than one line of meaning, scrape up to three (or should it be all ?)
-# figure out way to display proper characters in cmd and / or spreadsheet
-# comment code for comprehension for you and other users
+# fix error of not properly displaying items per page (one of the loop conditions, same words show up regardless of specified jlpt level 
+#   something must be happening to URL (?), debug later...)
+# delete all print statements
 
 # libraries
 import string
 import requests
+import xlwt
+import lxml
 from bs4 import BeautifulSoup
 
-# function for getting input, called in soup object declaration
-def getURL():
-    jlptLevel = input("Please enter JLPT level: ")
-    jlptLevel = changeInput(jlptLevel)
-    while(isValidJLPT(jlptLevel) == False):
-        print("ERROR: " + "\"" + jlptLevel + "\" is an invalid input" + "\n")
-        jlptLevel = input("Please enter JLPT level: ")
-        jlptLevel = changeInput(jlptLevel)
-    url = "https://jisho.org" + "/search/jlpt%20" + jlptLevel + "%20%23words?page=" + str(pageNum)
-    return (url)
+# global variable(s)
+pageNum = 0
+jlptLevel = ""
+
+# asks user for desired jlpt level, handles input error
+def getJlptLevel():
+    level = input("Please enter JLPT level: ")
+    level = changeInput(level)
+    while(isValidJLPT(level) == False):
+        print("ERROR: " + "\"" + level + "\" is an invalid input" + "\n")
+        level = input("Please enter JLPT level: ")
+        level = changeInput(level)
+    return(level)
 
 # if user entered number in word form, change for proper search results
 def changeInput(level):
@@ -48,51 +49,123 @@ def isValidJLPT(level):
     else:
         return False
 
-def updateURL():
+# function for getting input, called in soup object declaration
+def getUrl(level):
     global pageNum
-    global url
-
+    url = ""
     pageNum += 1
-    url = url[0:len(url) - len(str(pageNum))] + str(pageNum)
-    return (url)
+    url = "https://jisho.org" + "/search/jlpt%20" + level + "%20%23words?page=" + str(pageNum)
+    return(url)
 
-def main():
-    # global variables
-    global jlptLevel
-    global pageNum
-    global url
+# initializes xls spreadsheet with proper formatting and returns book, sheet, meaningFx, and regularFx
+def initXls(level):
+    # creates xls spreadsheet
+    level += "Words"
+    book = xlwt.Workbook()
+    sheet = book.add_sheet(level, True)
 
-    # declarations
-    pageNum = 1
-    url = getURL()
+    # header format style (wrapped / bold font, centered)
+    headingStyle = xlwt.XFStyle()
+    headingStyle.font.bold = True
+    headingStyle.alignment.wrap = 1
+    headingStyle.alignment.vert = xlwt.Alignment.VERT_CENTER
+    headingStyle.alignment.horz = xlwt.Alignment.HORZ_CENTER
 
-    # gather html object with beautiful soup and requests library
-    soup = BeautifulSoup(requests.get(url).text, "html.parser")
+    # meaning format style (regular font, left justified)
+    meaningStyle = xlwt.XFStyle()
+    meaningStyle.alignment.wrap = 1
+    meaningStyle.alignment.vert = xlwt.Alignment.VERT_CENTER
+    meaningStyle.alignment.horz = xlwt.Alignment.HORZ_LEFT
 
-    while(len(soup.find_all('div', {'id' : 'main_results'})) > 0 and not soup.find('div', {'id' : 'no-matches'})):
+    # regular format style (regular font, centered)
+    elseStyle = xlwt.XFStyle()
+    elseStyle.alignment.wrap = 1
+    elseStyle.alignment.vert = xlwt.Alignment.VERT_CENTER
+    elseStyle.alignment.horz = xlwt.Alignment.HORZ_CENTER
+
+    # create header cells and format accordingly
+    sheet.row(0).height_mismatch = True
+    sheet.row(0).height = 30 * 20
+    sheet.write(0, 0, "KANJI", headingStyle)
+    sheet.col(0).width = 15 * 367
+    sheet.write(0, 1, "FURIGANA", headingStyle)
+    sheet.col(1).width = 15 * 367
+    sheet.write(0, 2, "MEANING(S)", headingStyle)
+    sheet.col(2).width = 90 * 367
+    sheet.write(0, 3, "PART OF SPEECH", headingStyle)
+    sheet.col(3).width = 30 * 367
+    sheet.write(0, 4, "COMMON", headingStyle)
+    sheet.col(4).width = 15 * 367
+
+    return (book, sheet, meaningStyle, elseStyle)
+
+# iterates through all entries until empty
+def scrape(soup):
+    # initialize spreadsheet in scrape() for access
+    book, sheet, meaningFx, regularFx = initXls(jlptLevel)
+
+    # keeps track of row in the Excel spreadsheet
+    rowIndex = 1
+
+    while(not soup.find('div', {'id' : 'no-matches'})):
         for entry in soup.find_all('div', {'class' : 'concept_light clearfix'}):
+            sheet.row(rowIndex).height_mismatch = True
+            sheet.row(rowIndex).height = 60 * 20
+
             kanji = entry.find('span', {'class' : 'text'}).text.strip()
-            print ("Kanji: " + kanji)
+            sheet.write(rowIndex, 0, kanji, regularFx)
 
-            furigana = entry.find('div', {'class' : 'concept_light-representation'}).find_all('span')[1].text.strip()
-            print ("Furigana : " + furigana)
+            furigana = ""
+            kanaIndex = 1
+            furiganaWrapper = entry.find('div', {'class' : 'concept_light-representation'}).find_all('span')
+            while(kanaIndex < len(furiganaWrapper) - 1):
+                furigana += furiganaWrapper[kanaIndex].text.strip()
+                kanaIndex += 1
+            sheet.write(rowIndex, 1, furigana, regularFx)
 
-            meaning = []
-            meaning = entry.find_all('div', {'class' : 'meaning-wrapper'})[0].find('span', {'class' : 'meaning-meaning'}).text.strip()
-            print("Meaning: " + meaning)
+            meanings = []
+            meaningIndex = 0
+            meaningsWrapper = entry.find('div', {'class' : 'meanings-wrapper'})
+            while (meaningIndex < len(meaningsWrapper.find_all('div', {'class' : 'meaning-tags'})) and (meaningsWrapper.find_all('div', {'class' : 'meaning-tags'})[meaningIndex].text.strip() != "Wikipedia definition" or 
+                   meaningsWrapper.find_all('div', {'class' : 'meaning-tags'})[meaningIndex].text.strip() != "Wikipedia definition")):
+                meanings.append("Meaning " + "%02d" % (meaningIndex + 1) + ": " + 
+                                meaningsWrapper.find_all('span', {'class' : 'meaning-meaning'})[meaningIndex].text.strip() + "\n")
+                meaningIndex += 1
+            meanings[len(meanings) - 1] = meanings[len(meanings) - 1].strip()
+            sheet.write(rowIndex, 2, meanings, meaningFx)
 
             partOfSpeech = entry.find_all('div', {'class' : 'meaning-tags'})[0].text.strip()
-            print(partOfSpeech)
+            sheet.write(rowIndex, 3, partOfSpeech, regularFx)
 
             isCommon = False
             if(len(entry.find('div', {'class' : 'concept_light-status'}).find_all('span')) > 0 and 
                entry.find('div', {'class' : 'concept_light-status'}).find_all('span')[0].text.strip() == "Common word"):
                 isCommon = True
+            sheet.write(rowIndex, 4, str(isCommon), regularFx)
+
+            # update row index for spreadsheet
+            rowIndex += 1
+
+            # saves book, in innermost loop for safety in case of error, crash, etc.
+            book.save("JLPT_Words.xls")
+
+            print ("Kanji: " + kanji)
+            print("Furigana: " + furigana)
+            for meaning in meanings:
+                print(meaning)
+            print("Part of Speech : " + partOfSpeech)
             print("Common: " + str(isCommon))
+            print()
 
-            print("\n")
+        # output simple feedback of progress
+        print("PAGE: " + str(pageNum) + "\n")
+        
+        # reset soup object with updated url (new page numbers), call scrape() again
+        soup = BeautifulSoup(requests.get(getUrl(jlptLevel), "html.parser").text, "lxml")
 
-        soup = BeautifulSoup(requests.get(updateURL()).text, "html.parser")
+def main():
+    jlptLevel = getJlptLevel()
+    scrape(BeautifulSoup(requests.get(getUrl(jlptLevel), "html.parser").text, "lxml"))
 
 if __name__ == "__main__":
     main()
