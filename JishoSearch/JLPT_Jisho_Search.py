@@ -1,7 +1,6 @@
 # TODO:
-# fix error of not properly displaying items per page (one of the loop conditions, same words show up regardless of specified jlpt level 
-#   something must be happening to URL (?), debug later...)
-# delete all print statements
+# fix bug for words with mixture of kanji / hiragana
+# delete all print statements (or comment out ?)
 
 # libraries
 import string
@@ -13,6 +12,7 @@ from bs4 import BeautifulSoup
 # global variable(s)
 pageNum = 0
 jlptLevel = ""
+commonWordsOnly = False
 
 # asks user for desired jlpt level, handles input error
 def getJlptLevel():
@@ -49,6 +49,18 @@ def isValidJLPT(level):
     else:
         return False
 
+# asks user if they only want common words written to spreadsheet
+def askForCommonWordsOnly():
+    boolString = input("Would you like only commond words (y/n): ")
+    boolString = boolString.lower()
+    if(boolString == 'y'):
+        return True
+    elif(boolString == 'n'):
+        return False
+    else:
+        print("ERROR: " + "\"" + boolString + "\" is an invalid input" + "\n")
+        askForCommonWordsOnly()
+
 # function for getting input, called in soup object declaration
 def getUrl(level):
     global pageNum
@@ -60,9 +72,9 @@ def getUrl(level):
 # initializes xls spreadsheet with proper formatting and returns book, sheet, meaningFx, and regularFx
 def initXls(level):
     # creates xls spreadsheet
-    level += "Words"
+    name = level + " Words"
     book = xlwt.Workbook()
-    sheet = book.add_sheet(level, True)
+    sheet = book.add_sheet(name, True)
 
     # header format style (wrapped / bold font, centered)
     headingStyle = xlwt.XFStyle()
@@ -100,20 +112,19 @@ def initXls(level):
     return (book, sheet, meaningStyle, elseStyle)
 
 # iterates through all entries until empty
-def scrape(soup):
-    # initialize spreadsheet in scrape() for access
-    book, sheet, meaningFx, regularFx = initXls(jlptLevel)
+def scrapeAndWrite(soup, level):
+    # prompt user for only common words
+    commonWordsOnly = askForCommonWordsOnly()
 
-    # keeps track of row in the Excel spreadsheet
+    # initialize spreadsheet in scrape() for access
+    book, sheet, meaningFx, regularFx = initXls(level)
+
+    # keeps track of row in spreadsheet
     rowIndex = 1
 
     while(not soup.find('div', {'id' : 'no-matches'})):
         for entry in soup.find_all('div', {'class' : 'concept_light clearfix'}):
-            sheet.row(rowIndex).height_mismatch = True
-            sheet.row(rowIndex).height = 60 * 20
-
             kanji = entry.find('span', {'class' : 'text'}).text.strip()
-            sheet.write(rowIndex, 0, kanji, regularFx)
 
             furigana = ""
             kanaIndex = 1
@@ -121,51 +132,70 @@ def scrape(soup):
             while(kanaIndex < len(furiganaWrapper) - 1):
                 furigana += furiganaWrapper[kanaIndex].text.strip()
                 kanaIndex += 1
-            sheet.write(rowIndex, 1, furigana, regularFx)
+            furigana = furigana.replace(kanji, "")
 
             meanings = []
             meaningIndex = 0
             meaningsWrapper = entry.find('div', {'class' : 'meanings-wrapper'})
-            while (meaningIndex < len(meaningsWrapper.find_all('div', {'class' : 'meaning-tags'})) and (meaningsWrapper.find_all('div', {'class' : 'meaning-tags'})[meaningIndex].text.strip() != "Wikipedia definition" or 
-                   meaningsWrapper.find_all('div', {'class' : 'meaning-tags'})[meaningIndex].text.strip() != "Wikipedia definition")):
+            while(meaningIndex < len(meaningsWrapper.find_all('div', {'class' : 'meaning-tags'}))):
+                if(len(meaningsWrapper.find_all('div', {'class' : 'meaning-tags'})) <= 1):
+                    tag = ""
+                else:
+                    tag = meaningsWrapper.find_all('div', {'class' : 'meaning-tags'})[meaningIndex].text.strip()
+                if(tag == "Other forms" or tag == "Wikipedia definition" or tag == "Notes" or meaningIndex >= 3):
+                    break
                 meanings.append("Meaning " + "%02d" % (meaningIndex + 1) + ": " + 
                                 meaningsWrapper.find_all('span', {'class' : 'meaning-meaning'})[meaningIndex].text.strip() + "\n")
                 meaningIndex += 1
             meanings[len(meanings) - 1] = meanings[len(meanings) - 1].strip()
-            sheet.write(rowIndex, 2, meanings, meaningFx)
 
             partOfSpeech = entry.find_all('div', {'class' : 'meaning-tags'})[0].text.strip()
-            sheet.write(rowIndex, 3, partOfSpeech, regularFx)
 
             isCommon = False
             if(len(entry.find('div', {'class' : 'concept_light-status'}).find_all('span')) > 0 and 
                entry.find('div', {'class' : 'concept_light-status'}).find_all('span')[0].text.strip() == "Common word"):
                 isCommon = True
-            sheet.write(rowIndex, 4, str(isCommon), regularFx)
 
             # update row index for spreadsheet
             rowIndex += 1
 
-            # saves book, in innermost loop for safety in case of error, crash, etc.
+            # format spreadsheet
+            sheet.row(rowIndex).height_mismatch = True
+            sheet.row(rowIndex).height = 60 * 20
+
+            # write to spreadsheet, check for commonWordsOnly
+            if(commonWordsOnly and not isCommon):
+                break
+            else:
+                sheet.write(rowIndex, 0, kanji, regularFx)
+                sheet.write(rowIndex, 1, furigana, regularFx)
+                sheet.write(rowIndex, 2, meanings, meaningFx)
+                sheet.write(rowIndex, 3, partOfSpeech, regularFx)
+                sheet.write(rowIndex, 4, isCommon, regularFx)
+
+            # save spreadsheet, in innermost loop for safety in case of error, crash, etc.
             book.save("JLPT_Words.xls")
 
+            # print to console for checking
             print ("Kanji: " + kanji)
             print("Furigana: " + furigana)
             for meaning in meanings:
+                meaning = meaning.strip()
                 print(meaning)
             print("Part of Speech : " + partOfSpeech)
             print("Common: " + str(isCommon))
             print()
 
         # output simple feedback of progress
-        print("PAGE: " + str(pageNum) + "\n")
+        print("RESULTS OF PAGE: " + "%02d" % (pageNum) + "\n")
         
         # reset soup object with updated url (new page numbers), call scrape() again
-        soup = BeautifulSoup(requests.get(getUrl(jlptLevel), "html.parser").text, "lxml")
+        soup = BeautifulSoup(requests.get(getUrl(level), "html.parser").text, "lxml")
+    return
 
 def main():
     jlptLevel = getJlptLevel()
-    scrape(BeautifulSoup(requests.get(getUrl(jlptLevel), "html.parser").text, "lxml"))
+    scrapeAndWrite(BeautifulSoup(requests.get(getUrl(jlptLevel), "html.parser").text, "lxml"), jlptLevel)
 
 if __name__ == "__main__":
     main()
