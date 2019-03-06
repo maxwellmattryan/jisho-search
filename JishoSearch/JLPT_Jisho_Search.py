@@ -18,10 +18,9 @@ commonWordsOnly = False
 def getJlptLevel():
     level = input("Please enter JLPT level: ")
     level = changeInput(level)
-    while(isValidJLPT(level) == False):
+    if(isValidJLPT(level) == False):
         print("ERROR: " + "\"" + level + "\" is an invalid input" + "\n")
-        level = input("Please enter JLPT level: ")
-        level = changeInput(level)
+        getJlptLevel()
     return(level)
 
 # if user entered number in word form, change for proper search results
@@ -51,7 +50,7 @@ def isValidJLPT(level):
 
 # asks user if they only want common words written to spreadsheet
 def askForCommonWordsOnly():
-    boolString = input("Would you like only commond words (y/n): ")
+    boolString = input("Would you like only common words (y/n): ")
     boolString = boolString.lower()
     if(boolString == 'y'):
         return True
@@ -135,21 +134,21 @@ def scrapeAndWrite(soup, level):
             furigana = furigana.replace(kanji, "")
 
             meanings = []
-            meaningIndex = 0
-            meaningsWrapper = entry.find('div', {'class' : 'meanings-wrapper'})
-            while(meaningIndex < len(meaningsWrapper.find_all('div', {'class' : 'meaning-tags'}))):
-                if(len(meaningsWrapper.find_all('div', {'class' : 'meaning-tags'})) <= 1):
-                    tag = ""
-                else:
-                    tag = meaningsWrapper.find_all('div', {'class' : 'meaning-tags'})[meaningIndex].text.strip()
-                if(tag == "Other forms" or tag == "Wikipedia definition" or tag == "Notes" or meaningIndex >= 3):
+            meaningWrappers = entry.find_all('div', {'class' : 'meaning-wrapper'})
+            wrapperCount = len(meaningWrappers)
+            while(wrapperCount > 0):
+                if(meaningWrappers[len(meaningWrappers) - wrapperCount].find('span', {'class' : 'break-unit'}) or len(meaningWrappers) - wrapperCount > 4):
                     break
-                meanings.append("Meaning " + "%02d" % (meaningIndex + 1) + ": " + 
-                                meaningsWrapper.find_all('span', {'class' : 'meaning-meaning'})[meaningIndex].text.strip() + "\n")
-                meaningIndex += 1
+                if(len(meaningWrappers[len(meaningWrappers) - wrapperCount].find_all('span', {'class': 'meaning-meaning'})) > 0):
+                    meanings.append("Meaning " + "%02d" % (len(meaningWrappers) - wrapperCount + 1) + ": " +
+                                meaningWrappers[len(meaningWrappers) - wrapperCount].find('span', {'class': 'meaning-meaning'}).text.strip() + "\n")
+                wrapperCount -= 1
             meanings[len(meanings) - 1] = meanings[len(meanings) - 1].strip()
 
-            partOfSpeech = entry.find_all('div', {'class' : 'meaning-tags'})[0].text.strip()
+            if(len(entry.find_all('div', {'class' : 'meaning-tags'})) >= 1):
+                partOfSpeech = entry.find_all('div', {'class' : 'meaning-tags'})[0].text.strip()
+            else:
+                partOfSpeech = "NONE"
 
             isCommon = False
             if(len(entry.find('div', {'class' : 'concept_light-status'}).find_all('span')) > 0 and 
@@ -161,7 +160,7 @@ def scrapeAndWrite(soup, level):
 
             # format spreadsheet
             sheet.row(rowIndex).height_mismatch = True
-            sheet.row(rowIndex).height = 60 * 20
+            sheet.row(rowIndex).height = 75 * 20
 
             # write to spreadsheet, check for commonWordsOnly
             if(commonWordsOnly and not isCommon):
@@ -182,7 +181,7 @@ def scrapeAndWrite(soup, level):
             for meaning in meanings:
                 meaning = meaning.strip()
                 print(meaning)
-            print("Part of Speech : " + partOfSpeech)
+            print("Part of Speech: " + partOfSpeech)
             print("Common: " + str(isCommon))
             print()
 
