@@ -1,6 +1,5 @@
 # TODO:
 # fix bug for words with mixture of kanji / hiragana
-# delete all print statements (or comment out ?)
 
 # libraries
 import string
@@ -12,7 +11,6 @@ from bs4 import BeautifulSoup
 # global variable(s)
 pageNum = 0
 jlptLevel = ""
-commonWordsOnly = False
 
 # asks user for desired jlpt level, handles input error
 def getJlptLevel():
@@ -50,14 +48,14 @@ def isValidJLPT(level):
 
 # asks user if they only want common words written to spreadsheet
 def askForCommonWordsOnly():
-    boolString = input("Would you like only common words (y/n): ")
+    boolString = input("\n" + "Would you like only common words (y/n): ")
     boolString = boolString.lower()
     if(boolString == 'y'):
         return True
     elif(boolString == 'n'):
         return False
     else:
-        print("ERROR: " + "\"" + boolString + "\" is an invalid input" + "\n")
+        print("ERROR: " + "\"" + boolString + "\" is an invalid input")
         askForCommonWordsOnly()
 
 # function for getting input, called in soup object declaration
@@ -186,7 +184,7 @@ def scrapeAndWrite(soup, level):
             print()
 
         # output simple feedback of progress
-        print("RESULTS OF PAGE: " + "%02d" % (pageNum) + "\n")
+        print("RESULTS OF PAGE: " + "%03d" % (pageNum) + "\n\n" + "--------------------" + "\n")
         
         # reset soup object with updated url (new page numbers), call scrape() again
         soup = BeautifulSoup(requests.get(getUrl(level), "html.parser").text, "lxml")
