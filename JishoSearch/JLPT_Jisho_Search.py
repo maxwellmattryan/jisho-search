@@ -1,6 +1,3 @@
-# TODO:
-# fix bug for words with mixture of kanji / hiragana
-
 # libraries
 import string
 import requests
@@ -77,18 +74,21 @@ def initXls(level):
     # header format style (wrapped / bold font, centered)
     headingStyle = xlwt.XFStyle()
     headingStyle.font.bold = True
+    headingStyle.font.height = 16 * 20
     headingStyle.alignment.wrap = 1
     headingStyle.alignment.vert = xlwt.Alignment.VERT_CENTER
     headingStyle.alignment.horz = xlwt.Alignment.HORZ_CENTER
 
     # meaning format style (regular font, left justified)
     meaningStyle = xlwt.XFStyle()
+    meaningStyle.font.height = 11 * 20
     meaningStyle.alignment.wrap = 1
     meaningStyle.alignment.vert = xlwt.Alignment.VERT_CENTER
     meaningStyle.alignment.horz = xlwt.Alignment.HORZ_LEFT
 
     # regular format style (regular font, centered)
     elseStyle = xlwt.XFStyle()
+    elseStyle.font.height = 16 * 20
     elseStyle.alignment.wrap = 1
     elseStyle.alignment.vert = xlwt.Alignment.VERT_CENTER
     elseStyle.alignment.horz = xlwt.Alignment.HORZ_CENTER
@@ -133,10 +133,6 @@ def scrapeAndWrite(soup, level):
                     if(furigana.text.strip() == ""):
                         continue
                     furiganaSet.append(furigana.text.strip())
-            #for furigana in entry.find('span', {'class' : 'furigana'}).find_all('span'):
-            #    if(furigana.text.strip() == ""):
-            #        continue
-            #    furiganaSet.append(furigana.text.strip())
 
             furigana = kanji
             furiganaIndex = 0
