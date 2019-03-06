@@ -69,6 +69,7 @@ def getUrl(level):
 # initializes xls spreadsheet with proper formatting and returns book, sheet, meaningFx, and regularFx
 def initXls(level):
     # creates xls spreadsheet
+    filename = "JLPT_" + level + ".xls"
     name = level + " Words"
     book = xlwt.Workbook()
     sheet = book.add_sheet(name, True)
@@ -106,7 +107,7 @@ def initXls(level):
     sheet.write(0, 4, "COMMON", headingStyle)
     sheet.col(4).width = 15 * 367
 
-    return (book, sheet, meaningStyle, elseStyle)
+    return (filename, book, sheet, meaningStyle, elseStyle)
 
 # iterates through all entries until empty
 def scrapeAndWrite(soup, level):
@@ -114,22 +115,40 @@ def scrapeAndWrite(soup, level):
     commonWordsOnly = askForCommonWordsOnly()
 
     # initialize spreadsheet in scrape() for access
-    book, sheet, meaningFx, regularFx = initXls(level)
+    file, book, sheet, meaningFx, regularFx = initXls(level)
 
     # keeps track of row in spreadsheet
-    rowIndex = 1
+    rowIndex = 0
 
     while(not soup.find('div', {'id' : 'no-matches'})):
         for entry in soup.find_all('div', {'class' : 'concept_light clearfix'}):
             kanji = entry.find('span', {'class' : 'text'}).text.strip()
 
-            furigana = ""
-            kanaIndex = 1
-            furiganaWrapper = entry.find('div', {'class' : 'concept_light-representation'}).find_all('span')
-            while(kanaIndex < len(furiganaWrapper) - 1):
-                furigana += furiganaWrapper[kanaIndex].text.strip()
-                kanaIndex += 1
-            furigana = furigana.replace(kanji, "")
+            furiganaSet = []
+            for furiganaElement in entry.find_all('span', {'class' : 'furigana'}):
+                if(len(furiganaElement.find_all('rt')) > 0):
+                    furiganaSet.append(furiganaElement.find('rt').text.strip())
+                    break
+                for furigana in furiganaElement.find_all('span'):
+                    if(furigana.text.strip() == ""):
+                        continue
+                    furiganaSet.append(furigana.text.strip())
+            #for furigana in entry.find('span', {'class' : 'furigana'}).find_all('span'):
+            #    if(furigana.text.strip() == ""):
+            #        continue
+            #    furiganaSet.append(furigana.text.strip())
+
+            furigana = kanji
+            furiganaIndex = 0
+            furiganaSetIndex = 0
+            while(furiganaIndex < len(furigana) and furiganaSetIndex < len(furiganaSet)):
+                if(furigana[furiganaIndex] > 'ヿ'):
+                    furigana= furigana.replace(furigana[furiganaIndex], furiganaSet[furiganaSetIndex])
+                    furiganaSetIndex += 1
+                furiganaIndex += 1
+            for kana in furigana:
+                if(kana > 'ヿ'):
+                    furigana = furigana.replace(kana, "")
 
             meanings = []
             meaningWrappers = entry.find_all('div', {'class' : 'meaning-wrapper'})
@@ -171,9 +190,10 @@ def scrapeAndWrite(soup, level):
                 sheet.write(rowIndex, 4, isCommon, regularFx)
 
             # save spreadsheet, in innermost loop for safety in case of error, crash, etc.
-            book.save("JLPT_Words.xls")
+            book.save(file)
 
             # print to console for checking
+            print()
             print ("Kanji: " + kanji)
             print("Furigana: " + furigana)
             for meaning in meanings:
