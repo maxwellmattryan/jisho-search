@@ -12,7 +12,7 @@ You will need to install the following libraries in order to run the script.
 pip install bs4 requests xlwt lxml
 ```
 
-## Acknowledgements
+## Acknowledgments
 
 - This was my first script to utilize web scraping and ended up being quite enjoyable for me.
 - Extracting dictionary entries of Japanese words (specifically according to JLPT level) into a spreadsheet is useful for studying for a specific certification of said JLPT level.
