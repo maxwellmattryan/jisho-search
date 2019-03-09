@@ -1,6 +1,6 @@
 # Jisho Search
 
-This script allows for the scraping of dictionary entries of a given JLPT (Japanese Language Proficiency Test) level from jisho.org. The specific data scraped includes kanji, furigana, meaning, part of speech, and commonality. The script outputs both to the console and an excel file according to the specified JLPT level.
+This script allows for the scraping of dictionary entries of a given JLPT (Japanese Language Proficiency Test) level from [Jisho.org](https://jisho.org/). The specific data scraped includes kanji, furigana, meaning, part of speech, and commonality. The script outputs both to the console and an excel file according to the specified JLPT level.
 
 ## Libraries 
 
