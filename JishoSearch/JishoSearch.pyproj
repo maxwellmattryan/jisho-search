@@ -4,7 +4,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>9cf3c578-3f98-466c-bdb8-3a25f19bf95f</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>JLPT_Jisho_Search.py</StartupFile>
+    <StartupFile>JishoSearch.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -22,7 +22,7 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="JLPT_Jisho_Search.py" />
+    <Compile Include="JishoSearch.py" />
   </ItemGroup>
   <ItemGroup>
     <InterpreterReference Include="Global|PythonCore|3.7-32" />
