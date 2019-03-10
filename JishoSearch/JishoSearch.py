@@ -13,9 +13,10 @@ jlptLevel = ""
 def getJlptLevel():
     level = input("Please enter JLPT level: ")
     level = changeInput(level)
-    if(isValidJLPT(level) == False):
+    while(isValidJLPT(level) == False):
         print("ERROR: " + "\"" + level + "\" is an invalid input" + "\n")
-        getJlptLevel()
+        level = input("Please enter JLPT level: ")
+        level = changeInput(level)
     return(level)
 
 # if user entered number in word form, change for proper search results
@@ -58,7 +59,6 @@ def askForCommonWordsOnly():
 # function for getting input, called in soup object declaration
 def getUrl(level):
     global pageNum
-    url = ""
     pageNum += 1
     url = "https://jisho.org" + "/search/jlpt%20" + level + "%20%23words?page=" + str(pageNum)
     return(url)
