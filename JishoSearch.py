@@ -217,7 +217,6 @@ def scrapeAndWrite(soup, level):
     return
 
 def main():
-    createSheetsDir()
     jlptLevel = getJlptLevel()
     scrapeAndWrite(BeautifulSoup(requests.get(getUrl(jlptLevel), "html.parser").text, "lxml"), jlptLevel)
 
