@@ -6,13 +6,30 @@ This Python script allows for the scraping of dictionary entries of a given JLPT
 
 Resultant spreadsheets can be found [here](https://drive.google.com/open?id=1BAvCwVEkObtevfx9YwB0gGtDbqpndqsj).
 
-## Libraries 
+## How To Use 
+
+### Installation
 
 You will need to install the following libraries in order to run the script.
 
 ```
 pip install bs4 requests xlwt lxml
 ```
+
+### Execution
+
+Before starting, make sure you are in the root folder of the repository. Begin by running script with either the `python` or `python3` commands, like:
+
+```
+python3 JishoSearch.py
+```
+
+This will result in two prompts:
+
+- __JLPT Level__: the intended JLPT level to use in scraping, and the other for if you would like to include __only__ common words (use single digit input or phoenetic spelling)
+- __Commonality__: determines if the scraper should include or ignore words that are uncommon but still within the specified JLPT level
+
+The results will be written to a file of the naming convention, `jlpt-n<1..5>.xls`, within a `sheets` directory. Happy scraping!
 
 ## Acknowledgments
 
