@@ -1,9 +1,11 @@
 # libraries
-import string
-import requests
-import xlwt
-import lxml
 from bs4 import BeautifulSoup
+
+import lxml
+import os
+import requests
+import string
+import xlwt
 
 # global variable(s)
 pageNum = 0
@@ -63,10 +65,18 @@ def getUrl(level):
     url = "https://jisho.org" + "/search/jlpt%20" + level + "%20%23words?page=" + str(pageNum)
     return(url)
 
+def createSheetsDir():
+    try:
+        os.mkdir("sheets")
+    except FileExistsError:
+        print(e)
+
 # initializes xls spreadsheet with proper formatting and returns book, sheet, meaningFx, and regularFx
 def initXls(level):
+    createSheetsDir()
+
     # creates xls spreadsheet
-    filename = "JLPT_" + level + ".xls"
+    filename = f"sheets/jlpt-n{level[1:]}.xls"
     name = level + " Words"
     book = xlwt.Workbook()
     sheet = book.add_sheet(name, True)
@@ -207,6 +217,7 @@ def scrapeAndWrite(soup, level):
     return
 
 def main():
+    createSheetsDir()
     jlptLevel = getJlptLevel()
     scrapeAndWrite(BeautifulSoup(requests.get(getUrl(jlptLevel), "html.parser").text, "lxml"), jlptLevel)
 

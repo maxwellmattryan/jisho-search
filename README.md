@@ -1,6 +1,6 @@
 # Jisho Search
 
-_CAUTION: I have not included any `sleep` methods, so if you use this please be polite to the servers for jisho.org and add it in!_
+___CAUTION__: I have not included any `sleep` methods, so if you use this please be polite to the servers and add it in!_
 
 This Python script allows for the scraping of dictionary entries of a given JLPT (Japanese Language Proficiency Test) level from [Jisho.org](https://jisho.org/). The specific data scraped includes kanji, furigana, meaning, part of speech, and commonality. The script outputs both to the console and an excel file according to the specified JLPT level.
 
